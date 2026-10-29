@@ -1,0 +1,26 @@
+# DocPulse — sample corpus (Sprint 0)
+
+## Northwind Analytics Ltd. — FY2024 summary (fictional demo)
+
+Northwind Analytics Ltd. reported **total revenue of USD 48.2 million** for fiscal year 2024,
+an increase of **12%** compared to FY2023 (USD 43.0 million).
+
+**Operating expenses** totaled USD 31.5 million, including USD 9.1 million in research and
+development. **Net income** was USD 9.8 million, yielding a **net margin of 20.3%**.
+
+The company held **cash and equivalents of USD 14.6 million** at year-end. Long-term debt
+stood at USD 6.2 million, down from USD 8.0 million after an early repayment in Q3 2024.
+
+## Master Services Agreement — excerpt (fictional)
+
+**Clause 7.2 — Limitation of liability.** Except for breaches of confidentiality or gross
+negligence, each party's aggregate liability under this Agreement shall not exceed the fees paid
+by Customer in the **twelve (12) months** preceding the claim.
+
+**Clause 9.1 — Term.** This Agreement begins on the Effective Date and continues for an initial
+term of **twenty-four (24) months**, renewing automatically unless either party gives **ninety
+(90) days** written notice of non-renewal.
+
+**Governing law:** State of Delaware, United States.
+
+Use this file to validate ingestion and `/chat` without supplying your own PDFs first.

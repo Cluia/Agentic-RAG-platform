@@ -1,0 +1,30 @@
+# Notas locais de sprint / planejamento (não publicar no remoto)
+doc-sprint
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Secrets & env
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Local uploads (Sprint 0+)
+docpulse-agent/data/uploads/

@@ -6,7 +6,7 @@
 
 DocPulse is a portfolio-grade system that answers complex questions over large PDF corpora (reports, contracts, balance sheets). It combines **hybrid retrieval**, **LangGraph orchestration**, **sandboxed numeric computation**, and **automated quality evaluation** — the kind of end-to-end stack expected in production AI engineering roles.
 
-> **Status:** Sprint 0 in progress — ingestion pipeline, vector store, and baseline RAG API.
+> **Status:** Sprint 0 complete — naive RAG API, Qdrant ingestion, Docker Compose.
 
 ---
 
@@ -73,7 +73,7 @@ flowchart TB
 
 | Area | Description | Sprint |
 |------|-------------|--------|
-| Baseline RAG | PDF ingest, embeddings, Qdrant, `POST /chat` | **0** (current) |
+| Baseline RAG | PDF ingest, embeddings, Qdrant, `POST /chat` | **0** ✓ |
 | Hybrid retrieval | Dense vectors + BM25, fusion (RRF), rerank top-K | 1 |
 | Agent graph | Router, code tool, guardrail, rewriter loops | 2 |
 | Production API | Async endpoints, SSE, tracing per graph node | 3 |
@@ -125,26 +125,39 @@ Source will live under `docpulse-agent/` as implementation lands in each sprint.
 
 ## Getting started
 
-> Detailed setup will be added in Sprint 0. Expected flow:
-
 ```bash
 git clone https://github.com/Cluia/Agentic-RAG-platform.git
 cd Agentic-RAG-platform/docpulse-agent
 
 cp .env.example .env
-# Set OPENAI_API_KEY (or embedding provider of choice)
+# Set GEMINI_API_KEY (or GOOGLE_API_KEY) in .env
 
 docker compose up --build
 ```
 
-**Services (planned):**
+In another terminal, index the sample corpus and ask a question:
+
+```bash
+curl -X POST http://localhost:8000/ingest -H "Content-Type: application/json" -d "{\"path\": \"sample\"}"
+
+curl -X POST http://localhost:8000/chat -H "Content-Type: application/json" \
+  -d "{\"question\": \"What was Northwind net margin in FY2024?\"}"
+```
+
+Or ingest via CLI inside the container:
+
+```bash
+docker compose exec api python scripts/ingest.py data/sample
+```
+
+**Local Python (optional):** from `docpulse-agent/`, create a venv, `pip install -r requirements.txt`, copy `.env`, start Qdrant with Compose only (`docker compose up qdrant -d`), set `QDRANT_URL=http://localhost:6333`, then `python scripts/ingest.py data/sample` and `uvicorn app.main:app --app-dir src --reload`.
 
 | Service | URL |
 |---------|-----|
 | API | `http://localhost:8000` |
 | OpenAPI | `http://localhost:8000/docs` |
-| Qdrant | `http://localhost:6333` |
-| Phoenix UI | `http://localhost:6006` |
+| Qdrant | `http://localhost:6333/dashboard` |
+| Phoenix UI | planned (Sprint 3) |
 
 ---
 
