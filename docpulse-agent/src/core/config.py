@@ -20,8 +20,8 @@ class Settings(BaseSettings):
     qdrant_url: str = "http://localhost:6333"
     qdrant_collection: str = "docpulse"
 
-    embedding_model: str = "text-embedding-004"
-    chat_model: str = "gemini-2.0-flash"
+    embedding_model: str = "gemini-embedding-001"
+    chat_model: str = "gemini-3.8-flash"
     embedding_dimensions: int = 768
 
     chunk_size: int = 800

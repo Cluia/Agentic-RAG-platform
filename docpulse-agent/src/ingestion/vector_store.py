@@ -70,12 +70,13 @@ class VectorStore:
     def search(self, query: str, top_k: int | None = None) -> list[dict[str, Any]]:
         limit = top_k or self._settings.retrieve_top_k
         query_vector = self.embed_texts([query])[0]
-        hits = self._client.search(
+        response = self._client.query_points(
             collection_name=self._settings.qdrant_collection,
-            query_vector=query_vector,
+            query=query_vector,
             limit=limit,
             with_payload=True,
         )
+        hits = response.points
         results: list[dict[str, Any]] = []
         for hit in hits:
             payload = hit.payload or {}

@@ -19,6 +19,9 @@ class GeminiClient:
         response = self._client.models.embed_content(
             model=self._settings.embedding_model,
             contents=texts,
+            config=types.EmbedContentConfig(
+                output_dimensionality=self._settings.embedding_dimensions,
+            ),
         )
         if not response.embeddings:
             return []
