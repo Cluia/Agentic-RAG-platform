@@ -100,57 +100,37 @@ Planned comparison modes for benchmarks: `naive_rag` → `hybrid_rerank` → ful
 
 ---
 
-## Repository layout (planned)
-
-```text
-docpulse-agent/
-├── .github/workflows/ci-cd.yml
-├── docker-compose.yml
-├── Dockerfile
-├── requirements.txt
-├── src/
-│   ├── app/              # FastAPI application
-│   ├── core/             # Config, telemetry
-│   ├── ingestion/        # PDF parsing, chunking, indexing
-│   ├── agent/            # LangGraph state, nodes, edges
-│   └── tools/            # Retriever, Python REPL
-└── tests/
-    ├── unit/
-    └── evals/            # Ragas golden set
-```
-
-Source will live under `docpulse-agent/` as implementation lands in each sprint.
-
----
-
 ## Getting started
+
+All commands below assume you are in **`docpulse-agent/`** (where `docker-compose.yml` lives). Running `docker compose` from the repo root will fail with *no configuration file provided*.
+
+### Prerequisites
+
+- Docker Desktop (Compose v2)
+- A [Google AI / Gemini API key](https://aistudio.google.com/apikey)
+
+### Environment
 
 ```bash
 git clone https://github.com/Cluia/Agentic-RAG-platform.git
 cd Agentic-RAG-platform/docpulse-agent
 
 cp .env.example .env
-# Set GEMINI_API_KEY (or GOOGLE_API_KEY) in .env
+# Set GEMINI_API_KEY (or GOOGLE_API_KEY) in .env — never commit .env
+```
 
+Default models (override in `.env` if Google rotates names):
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `EMBEDDING_MODEL` | `gemini-embedding-001` | Vectors for Qdrant (`EMBEDDING_DIMENSIONS=768`) |
+| `CHAT_MODEL` | `gemini-3.8-flash` | Naive RAG answer generation |
+
+### Run the stack
+
+```bash
 docker compose up --build
 ```
-
-In another terminal, index the sample corpus and ask a question:
-
-```bash
-curl -X POST http://localhost:8000/ingest -H "Content-Type: application/json" -d "{\"path\": \"sample\"}"
-
-curl -X POST http://localhost:8000/chat -H "Content-Type: application/json" \
-  -d "{\"question\": \"What was Northwind net margin in FY2024?\"}"
-```
-
-Or ingest via CLI inside the container:
-
-```bash
-docker compose exec api python scripts/ingest.py data/sample
-```
-
-**Local Python (optional):** from `docpulse-agent/`, create a venv, `pip install -r requirements.txt`, copy `.env`, start Qdrant with Compose only (`docker compose up qdrant -d`), set `QDRANT_URL=http://localhost:6333`, then `python scripts/ingest.py data/sample` and `uvicorn app.main:app --app-dir src --reload`.
 
 | Service | URL |
 |---------|-----|
@@ -158,6 +138,107 @@ docker compose exec api python scripts/ingest.py data/sample
 | OpenAPI | `http://localhost:8000/docs` |
 | Qdrant | `http://localhost:6333/dashboard` |
 | Phoenix UI | planned (Sprint 3) |
+
+### Index sample data and chat
+
+**Bash / Git Bash:**
+
+```bash
+curl -X POST http://localhost:8000/ingest -H "Content-Type: application/json" -d '{"path": "sample"}'
+
+curl -X POST http://localhost:8000/chat -H "Content-Type: application/json" \
+  -d '{"question": "What was Northwind net margin in FY2024?"}'
+```
+
+**PowerShell** (native `curl` is an alias for `Invoke-WebRequest` — use `curl.exe` or):
+
+```powershell
+Invoke-RestMethod -Method POST -Uri http://localhost:8000/ingest `
+  -ContentType "application/json" -Body '{"path": "sample"}'
+
+Invoke-RestMethod -Method POST -Uri http://localhost:8000/chat `
+  -ContentType "application/json" `
+  -Body '{"question": "What was Northwind net margin in FY2024?"}'
+```
+
+Expected smoke answer: **net margin 20.3%** (from `data/sample/northwind_fy2024_and_msa.txt`).
+
+### Ingest via CLI (inside the container)
+
+```bash
+docker compose exec api python scripts/ingest.py data/sample
+```
+
+Same pipeline as `POST /ingest`, useful for local debugging without HTTP.
+
+### Sprint 0 verification (recommended before Sprint 1)
+
+From `docpulse-agent/` with the stack running and `.env` configured:
+
+```bash
+# Cold start: wipe Qdrant volume, recreate stack, ingest + numeric + MSA chat (~2–10 min)
+docker compose down -v && docker compose up -d --build
+python scripts/smoke_sprint0_cold_start.py --require-empty --verbose
+```
+
+Additional checklist scripts (same folder):
+
+```bash
+python scripts/smoke_sprint0_cli_ingest.py --verbose      # CLI vs API ingest
+python scripts/smoke_sprint0_pdf.py --verbose             # PDF parse + chat
+python scripts/smoke_sprint0_api_edges.py --verbose     # HTTP edge cases + /docs
+# For empty-index /chat check: run api_edges right after `down -v && up -d` (before other smokes)
+```
+
+Regenerate the sample PDF if missing:
+
+```bash
+python scripts/generate_sample_pdf.py
+```
+
+Optional live pytest (requires `DOCPULSE_E2E=1`, stack up, `-s` for progress logs):
+
+```bash
+DOCPULSE_E2E=1 pytest tests/e2e -s
+```
+
+**Sprint 0 done when:** cold-start smoke passes, PDF smoke passes, API edge smoke passes, and unit tests pass (`pytest tests/unit`).
+
+`/chat` calls can take **1–5 minutes each** (Gemini latency + retries). Watch progress in the smoke scripts or `docker compose logs api -f`.
+
+### Local Python (optional)
+
+From `docpulse-agent/`, create a venv, `pip install -r requirements.txt`, copy `.env`, start Qdrant only (`docker compose up qdrant -d`), set `QDRANT_URL=http://localhost:6333`, then:
+
+```bash
+python scripts/ingest.py data/sample
+uvicorn app.main:app --app-dir src --reload
+```
+
+---
+
+## Repository layout
+
+```text
+docpulse-agent/
+├── docker-compose.yml
+├── Dockerfile
+├── requirements.txt
+├── scripts/
+│   ├── ingest.py
+│   ├── smoke_sprint0_cold_start.py
+│   └── …                     # Sprint 0 checklist smokes
+├── src/
+│   ├── app/                  # FastAPI
+│   ├── core/                 # Config, Gemini client
+│   └── ingestion/            # Parse, chunk, Qdrant
+├── data/sample/              # Demo .txt + PDF (`acme_fy2024_summary.pdf`)
+└── tests/
+    ├── unit/
+    └── e2e/                  # Live stack tests (DOCPULSE_E2E=1)
+```
+
+Future sprints add `src/agent/`, `src/tools/`, `.github/workflows/`, and `tests/evals/`.
 
 ---
 
